@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --green: #0F5E45;
+  --primary: #1D9E75;
+  --primary-light: #E8F7F2;
+  --sem-green: #22c55e;
+  --sem-yellow: #f59e0b;
+  --sem-red: #ef4444;
+  --checkin-bg: #F0FAF5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #f8faf9;
+  font-family: 'DM Sans', sans-serif;
+}
