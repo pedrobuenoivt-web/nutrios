@@ -1,124 +1,171 @@
 'use client'
 
 import { useState } from 'react'
-import { STUDENTS } from '@/lib/mock-data'
+import { students } from '@/lib/mock-data'
+import { CreditCard, Search, Filter } from 'lucide-react'
 
-type FilterKey = 'todos' | 'pago' | 'pendente' | 'atrasado'
-
-function Badge({ payment }: { payment: string }) {
-  const cfg: Record<string, [string, string]> = {
-    pago:     ['#dcfce7', '#166534'],
-    pendente: ['#fef9c3', '#854d0e'],
-    atrasado: ['#fee2e2', '#991b1b'],
-  }
-  const [bg, color] = cfg[payment] ?? ['#f3f4f6', '#374151']
-  return (
-    <span style={{ background: bg, color, fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 20 }}>
-      {payment.charAt(0).toUpperCase() + payment.slice(1)}
-    </span>
-  )
-}
-
-const tabs: { id: FilterKey; label: string }[] = [
-  { id: 'todos',    label: 'Todos' },
-  { id: 'pago',     label: 'Pagos' },
-  { id: 'pendente', label: 'Pendentes' },
-  { id: 'atrasado', label: 'Atrasados' },
-]
+type PaymentFilter = 'all' | 'pago' | 'pendente' | 'atrasado'
 
 export default function FinanceiroPage() {
-  const [filter, setFilter] = useState<FilterKey>('todos')
+  const [filter, setFilter] = useState<PaymentFilter>('all')
+  const [searchTerm, setSearchTerm] = useState('')
 
-  const rows = STUDENTS.map(s => ({ ...s, valor: 350, vencimento: '15/06/2024' }))
-  const filtered = filter === 'todos' ? rows : rows.filter(r => r.payment === filter)
+  const filteredStudents = students.filter(student => {
+    const matchesFilter = filter === 'all' || student.payment === filter
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesFilter && matchesSearch
+  })
 
-  const card = {
-    background: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: 14,
-    padding: '20px 22px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+  const stats = {
+    total: students.length * 350,
+    paid: students.filter(s => s.payment === 'pago').length * 350,
+    pending: students.filter(s => s.payment === 'pendente').length * 350,
+    overdue: students.filter(s => s.payment === 'atrasado').length * 350,
   }
 
   return (
-    <div className="p-9">
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Financeiro</h1>
-        <p className="text-sm text-gray-500 mt-1">Gestão de pagamentos e receita</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+          <p className="text-sm text-gray-500 mt-1">Controle de pagamentos dos alunos</p>
+        </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3.5 mb-6">
-        {[
-          { label: 'MRR',               value: 'R$ 3.100', icon: '📈', red: false },
-          { label: 'Recebido este mês', value: 'R$ 1.950', icon: '✅', red: false },
-          { label: 'Em atraso',         value: 'R$ 800',   icon: '🚨', red: true  },
-        ].map((c, i) => (
-          <div key={i} style={{ ...card, background: c.red ? '#fff5f5' : '#fff' }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="text-lg">{c.icon}</span>
-              <span className="text-gray-500 text-sm">{c.label}</span>
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: c.red ? '#ef4444' : '#111' }}>{c.value}</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">Faturamento Total</div>
+            <div className="text-2xl font-bold text-gray-900">R$ {stats.total}</div>
           </div>
-        ))}
-      </div>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">Pagos</div>
+            <div className="text-2xl font-bold text-green-600">R$ {stats.paid}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">Pendentes</div>
+            <div className="text-2xl font-bold text-yellow-600">R$ {stats.pending}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="text-sm text-gray-600 mb-1">Atrasados</div>
+            <div className="text-2xl font-bold text-red-600">R$ {stats.overdue}</div>
+          </div>
+        </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-0 mb-6" style={{ borderBottom: '2px solid #e5e7eb' }}>
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setFilter(t.id)}
-            style={{
-              padding: '10px 20px',
-              fontSize: 14,
-              color: filter === t.id ? '#1D9E75' : '#6b7280',
-              fontWeight: filter === t.id ? 600 : 400,
-              borderBottom: filter === t.id ? '2px solid #1D9E75' : '2px solid transparent',
-              marginBottom: -2,
-              background: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar aluno..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  filter === 'all'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setFilter('pago')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  filter === 'pago'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Pagos
+              </button>
+              <button
+                onClick={() => setFilter('pendente')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  filter === 'pendente'
+                    ? 'bg-yellow-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Pendentes
+              </button>
+              <button
+                onClick={() => setFilter('atrasado')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  filter === 'atrasado'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Atrasados
+              </button>
+            </div>
+          </div>
 
-      {/* Table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['Aluno', 'Valor', 'Vencimento', 'Status', 'Dias em atraso'].map(h => (
-                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: 12, color: '#6b7280', fontWeight: 500, borderBottom: '1px solid #e5e7eb' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: '13px 16px' }}>
-                  <div className="flex items-center gap-2.5">
-                    <span style={{ fontSize: 20 }}>{p.emoji}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</span>
-                  </div>
-                </td>
-                <td style={{ padding: '13px 16px', fontSize: 14, fontWeight: 600 }}>R$ {p.valor}</td>
-                <td style={{ padding: '13px 16px', fontSize: 13, color: '#6b7280' }}>{p.vencimento}</td>
-                <td style={{ padding: '13px 16px' }}><Badge payment={p.payment} /></td>
-                <td style={{ padding: '13px 16px', fontSize: 14, color: p.daysLate > 0 ? '#ef4444' : '#6b7280', fontWeight: p.daysLate > 0 ? 600 : 400 }}>
-                  {p.daysLate > 0 ? `${p.daysLate} dias` : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Aluno</th>
+                  <th className="text-left py-3 px-4">Plano</th>
+                  <th className="text-center py-3 px-4">Status</th>
+                  <th className="text-center py-3 px-4">Dias Atraso</th>
+                  <th className="text-right py-3 px-4">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">
+                          {student.emoji}
+                        </div>
+                        <span className="font-medium">{student.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">{student.plan}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex justify-center">
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                            student.payment === 'pago'
+                              ? 'bg-green-100 text-green-700'
+                              : student.payment === 'pendente'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {student.payment === 'pago' && 'Pago'}
+                          {student.payment === 'pendente' && 'Pendente'}
+                          {student.payment === 'atrasado' && 'Atrasado'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      {student.payment === 'atrasado' ? (
+                        <span className="text-red-600 font-semibold">{student.daysLate}</span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="text-right py-3 px-4 font-semibold">R$ 350</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredStudents.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              Nenhum aluno encontrado
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

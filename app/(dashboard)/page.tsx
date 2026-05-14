@@ -2,160 +2,221 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { STUDENTS, semColor } from '@/lib/mock-data'
+import { students } from '@/lib/mock-data'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react'
 
-function Badge({ payment }: { payment: string }) {
-  const cfg: Record<string, [string, string]> = {
-    pago:     ['#dcfce7', '#166534'],
-    pendente: ['#fef9c3', '#854d0e'],
-    atrasado: ['#fee2e2', '#991b1b'],
-  }
-  const [bg, color] = cfg[payment] ?? ['#f3f4f6', '#374151']
-  return (
-    <span style={{ background: bg, color, fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 20 }}>
-      {payment.charAt(0).toUpperCase() + payment.slice(1)}
-    </span>
-  )
+function semColor(score: number): string {
+  if (score >= 4.5) return '🟢'
+  if (score >= 3.5) return '🟡'
+  return '🔴'
 }
 
 export default function DashboardPage() {
-  const [expanded, setExpanded] = useState<number | null>(null)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
-  const statCards = [
-    { label: 'MRR Atual',             value: 'R$ 3.100', icon: '💰', red: false },
+  const toggleRow = (id: number) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedRows(newExpanded)
+  }
+
+  const metrics = [
     { label: 'Alunos Ativos',         value: '8',         icon: '👥', red: false },
-    { label: 'Check-ins essa semana', value: '6',         icon: '📋', red: false },
-    { label: 'Inadimplentes',         value: '2',         icon: '⚠️', red: true  },
+    { label: 'Score Médio',           value: '3.5',       icon: '⭐', red: false },
+    { label: 'Pagamentos Atrasados',  value: '2',         icon: '💰', red: true  },
+    { label: 'Taxa de Adesão',        value: '87%',       icon: '📊', red: false },
+  ]
+
+  const alerts = [
+    '⚠️ 3 alunos com energia ≤ 2 essa semana',
+    '🔔 2 alunos sem check-in há +10 dias',
   ]
 
   return (
-    <div className="p-9">
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Visão geral dos seus alunos e métricas</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Visão geral dos seus alunos e métricas</p>
+        </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-3.5 mb-5">
-        {statCards.map((c, i) => (
-          <div
-            key={i}
-            style={{ background: c.red ? '#fff5f5' : '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '20px 22px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-          >
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="text-xl">{c.icon}</span>
-              <span className="text-gray-500 text-sm">{c.label}</span>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {metrics.map((metric, i) => (
+            <div key={i} className="bg-white rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600">{metric.label}</div>
+                  <div className={`text-2xl font-bold ${metric.red ? 'text-red-600' : 'text-gray-900'}`}>
+                    {metric.value}
+                  </div>
+                </div>
+                <div className="text-3xl">{metric.icon}</div>
+              </div>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: c.red ? '#ef4444' : '#111' }}>{c.value}</div>
+          ))}
+        </div>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
+          <div className="font-medium text-yellow-800 mb-2">Alertas</div>
+          {alerts.map((alert, i) => (
+            <div key={i} className="text-sm text-yellow-700">{alert}</div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span style={{ fontWeight: 600, fontSize: 16 }}>Alunos</span>
           </div>
-        ))}
-      </div>
 
-      {/* Alert pills */}
-      <div className="flex gap-2.5 mb-6">
-        <div style={{ background: '#fee2e2', color: '#991b1b', fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500 }}>
-          ⚠️ 3 alunos com energia ≤ 2 essa semana
-        </div>
-        <div style={{ background: '#fef3c7', color: '#92400e', fontSize: 13, padding: '8px 14px', borderRadius: 20, fontWeight: 500 }}>
-          🕐 2 alunos sem check-in há +10 dias
-        </div>
-      </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="w-8"></th>
+                  <th className="text-left py-3 px-4">Nome</th>
+                  <th className="text-center py-3 px-4">Score</th>
+                  <th className="text-center py-3 px-4">Peso (kg)</th>
+                  <th className="text-center py-3 px-4">Pagamento</th>
+                  <th className="text-center py-3 px-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student) => {
+                  const isExpanded = expandedRows.has(student.id)
+                  const lastWeek = student.history[student.history.length - 1]
+                  const prevWeek = student.history[student.history.length - 2]
+                  const weightDiff = lastWeek.peso - prevWeek.peso
 
-      {/* Table */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid #e5e7eb' }}>
-          <span style={{ fontWeight: 600, fontSize: 16 }}>Alunos</span>
-        </div>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['', '', 'Nome', 'Score', 'Peso Atual', 'Pagamento'].map((h, i) => (
-                <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, color: '#6b7280', fontWeight: 500, borderBottom: '1px solid #e5e7eb' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {STUDENTS.map(s => {
-              const last = s.history[s.history.length - 1]
-              const isOpen = expanded === s.id
-              const miniData = s.history.slice(-5)
-
-              return (
-                <>
-                  <tr
-                    key={s.id}
-                    onClick={() => setExpanded(isOpen ? null : s.id)}
-                    className="cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ borderBottom: '1px solid #e5e7eb' }}
-                  >
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: semColor(s) }} />
-                    </td>
-                    <td style={{ padding: '13px 8px', fontSize: 22 }}>{s.emoji}</td>
-                    <td style={{ padding: '13px 16px', fontWeight: 500, fontSize: 14 }}>{s.name}</td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <span style={{
-                        fontWeight: 700, fontSize: 15,
-                        color: s.score >= 4 ? '#22c55e' : s.score < 2.5 ? '#ef4444' : '#f59e0b',
-                      }}>
-                        {s.score.toFixed(1)}
-                      </span>
-                      <span style={{ color: '#9ca3af', fontSize: 12 }}>/5</span>
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: 14, color: '#6b7280' }}>{s.weight} kg</td>
-                    <td style={{ padding: '13px 16px' }}><Badge payment={s.payment} /></td>
-                  </tr>
-
-                  {isOpen && (
-                    <tr key={`${s.id}-exp`} style={{ background: '#F0FAF5' }}>
-                      <td colSpan={6} style={{ padding: '18px 22px' }}>
-                        {/* Mini indicator cards */}
-                        <div className="grid grid-cols-4 gap-3 mb-4">
-                          {[
-                            { icon: '⚡', label: 'Energia',        val: last.energia },
-                            { icon: '💪', label: 'Desempenho',     val: last.desempenho },
-                            { icon: '🍽️', label: 'Refeições fora', val: last.refeicoesFora },
-                            { icon: '💧', label: 'Hidratação',     val: last.hidratacao },
-                          ].map((m, i) => (
-                            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px' }}>
-                              <div style={{ fontSize: 18, marginBottom: 4 }}>{m.icon}</div>
-                              <div style={{ fontSize: 11, color: '#6b7280' }}>{m.label}</div>
-                              <div style={{ fontSize: 20, fontWeight: 700 }}>{m.val}</div>
+                  return (
+                    <React.Fragment key={student.id}>
+                      <tr className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-2">
+                          <button
+                            onClick={() => toggleRow(student.id)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">
+                              {student.emoji}
                             </div>
-                          ))}
-                        </div>
+                            <span className="font-medium">{student.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-2xl">{semColor(student.score)}</span>
+                            <span className="font-semibold">{student.score.toFixed(1)}</span>
+                          </div>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="font-semibold">{student.weight}</span>
+                            {weightDiff !== 0 && (
+                              <span className={`text-sm ${weightDiff < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {weightDiff > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                              student.payment === 'pago'
+                                ? 'bg-green-100 text-green-700'
+                                : student.payment === 'pendente'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {student.payment === 'pago' && '✓ Pago'}
+                            {student.payment === 'pendente' && '⏳ Pendente'}
+                            {student.payment === 'atrasado' && `❌ ${student.daysLate}d`}
+                          </span>
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          <Link
+                            href={`/aluno/${student.id}`}
+                            className="text-green-600 hover:text-green-700 font-medium"
+                          >
+                            Ver perfil
+                          </Link>
+                        </td>
+                      </tr>
 
-                        {/* Mini chart */}
-                        <div style={{ height: 110, marginBottom: 14 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={miniData}>
-                              <XAxis dataKey="semana" tick={{ fontSize: 11 }} />
-                              <YAxis domain={[0, 5]} tick={{ fontSize: 11 }} />
-                              <Tooltip />
-                              <Line type="monotone" dataKey="score" stroke="#1D9E75" strokeWidth={2.5} dot={{ r: 4 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={6} className="bg-gray-50 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <h3 className="font-semibold mb-3">Evolução do Score (8 semanas)</h3>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <LineChart data={student.history}>
+                                    <XAxis 
+                                      dataKey="week" 
+                                      tickFormatter={(w) => `S${w}`}
+                                    />
+                                    <YAxis domain={[0, 5]} />
+                                    <Tooltip 
+                                      labelFormatter={(w) => `Semana ${w}`}
+                                      formatter={(value: number) => value.toFixed(1)}
+                                    />
+                                    <Line 
+                                      type="monotone" 
+                                      dataKey={(w) => ((w.energia + w.desempenho + w.hidratacao + (7 - w.refeicoesFora)) / 20) * 5}
+                                      stroke="#10b981" 
+                                      strokeWidth={2}
+                                      name="Score"
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
 
-                        <Link
-                          href={`/aluno/${s.id}`}
-                          style={{ background: '#1D9E75', color: '#fff', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, display: 'inline-block' }}
-                        >
-                          Ver perfil completo →
-                        </Link>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              )
-            })}
-          </tbody>
-        </table>
+                              <div>
+                                <h3 className="font-semibold mb-3">Evolução do Peso (8 semanas)</h3>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <LineChart data={student.history}>
+                                    <XAxis 
+                                      dataKey="week" 
+                                      tickFormatter={(w) => `S${w}`}
+                                    />
+                                    <YAxis />
+                                    <Tooltip 
+                                      labelFormatter={(w) => `Semana ${w}`}
+                                      formatter={(value: number) => `${value} kg`}
+                                    />
+                                    <Line 
+                                      type="monotone" 
+                                      dataKey="peso" 
+                                      stroke="#3b82f6" 
+                                      strokeWidth={2}
+                                      name="Peso"
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
+import React from 'react'

@@ -1,155 +1,162 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { STUDENTS } from '@/lib/mock-data'
-import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
+import { students } from '@/lib/mock-data'
+import { 
+  ArrowLeft, Calendar, CreditCard, TrendingUp, 
+  TrendingDown, Activity, Droplet, Utensils, Zap 
+} from 'lucide-react'
 
-function Badge({ payment }: { payment: string }) {
-  const cfg: Record<string, [string, string]> = {
-    pago:     ['#dcfce7', '#166534'],
-    pendente: ['#fef9c3', '#854d0e'],
-    atrasado: ['#fee2e2', '#991b1b'],
+interface PageProps {
+  params: {
+    id: string
   }
-  const [bg, color] = cfg[payment] ?? ['#f3f4f6', '#374151']
-  return (
-    <span style={{ background: bg, color, fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 20 }}>
-      {payment.charAt(0).toUpperCase() + payment.slice(1)}
-    </span>
-  )
 }
 
-export default function AlunoPage({ params }: { params: { id: string } }) {
-  const student = STUDENTS.find(s => s.id === Number(params.id))
-  if (!student) notFound()
-
-  const last = student.history[student.history.length - 1]
-  const [notes, setNotes] = useState('Aluno(a) comprometido(a), ótima evolução nas últimas semanas.')
-  const [saved, setSaved] = useState(false)
-
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+export default function AlunoPage({ params }: PageProps) {
+  const aluno = students.find(s => s.id === parseInt(params.id))
+  
+  if (!aluno) {
+    notFound()
   }
 
-  const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '20px 22px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }
+  const lastWeek = aluno.history[aluno.history.length - 1]
+  const previousWeek = aluno.history[aluno.history.length - 2]
+  
+  const weightChange = lastWeek.peso - previousWeek.peso
+  const scoreChange = (
+    ((lastWeek.energia + lastWeek.desempenho + lastWeek.hidratacao + (7 - lastWeek.refeicoesFora)) / 20) * 5 -
+    ((previousWeek.energia + previousWeek.desempenho + previousWeek.hidratacao + (7 - previousWeek.refeicoesFora)) / 20) * 5
+  )
 
   return (
-    <div className="p-9">
-      {/* Back */}
-      <Link href="/" className="flex items-center gap-1.5 text-sm font-medium mb-6" style={{ color: '#1D9E75' }}>
-        ← Dashboard
-      </Link>
-
-      {/* Header card */}
-      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18 }}>
-        <div style={{ fontSize: 52 }}>{student.emoji}</div>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.4px' }}>{student.name}</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, marginTop: 2 }}>Desde {student.start}</p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#1D9E75' }}>R$ {student.plan}/mês</div>
-          <div style={{ marginTop: 4 }}><Badge payment={student.payment} /></div>
-        </div>
-      </div>
-
-      {/* 4 indicator cards */}
-      <div className="grid grid-cols-4 gap-3.5 mb-4">
-        {[
-          { icon: '⚡', label: 'Energia',        val: last.energia,        sub: 'Média semanal',           suffix: '/5' },
-          { icon: '💪', label: 'Desempenho',     val: last.desempenho,     sub: 'Performance nos treinos', suffix: '/5' },
-          { icon: '🍽️', label: 'Refeições fora', val: last.refeicoesFora,  sub: 'Fora do plano',           suffix: '' },
-          { icon: '💧', label: 'Hidratação',     val: last.hidratacao,     sub: 'Consumo de água',         suffix: '/5' },
-        ].map((m, i) => (
-          <div key={i} style={{ ...card, textAlign: 'center' }}>
-            <div style={{ fontSize: 26, marginBottom: 8 }}>{m.icon}</div>
-            <div style={{ fontSize: 30, fontWeight: 700 }}>
-              {m.val}<span style={{ fontSize: 14, color: '#9ca3af' }}>{m.suffix}</span>
-            </div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{m.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Score card */}
-      <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <div>
-          <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>Score Semanal</div>
-          <div style={{ fontSize: 44, fontWeight: 800, color: '#1D9E75', letterSpacing: '-1px' }}>
-            {last.score.toFixed(1)}<span style={{ fontSize: 20, color: '#9ca3af' }}>/5</span>
-          </div>
-        </div>
-        <div style={{ fontSize: 13, color: '#6b7280', fontFamily: 'monospace', background: '#f3f4f6', padding: '8px 14px', borderRadius: 8 }}>
-          (Energia + Desempenho + Hidratação) / 3
-        </div>
-      </div>
-
-      {/* Dual-axis chart */}
-      <div style={{ ...card, marginBottom: 18 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 18 }}>Evolução (8 semanas)</div>
-        <div style={{ height: 240 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={student.history}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="semana" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="left"  domain={[0, 5]}        tick={{ fontSize: 12 }} label={{ value: 'Score',    angle: -90, position: 'insideLeft',  style: { fontSize: 11 } }} />
-              <YAxis yAxisId="right" orientation="right"    tick={{ fontSize: 12 }} label={{ value: 'Peso (kg)', angle: 90, position: 'insideRight', style: { fontSize: 11 } }} />
-              <Tooltip />
-              <Legend />
-              <Area yAxisId="left"  type="monotone" dataKey="score" name="Score"     stroke="#1D9E75" strokeWidth={3} fill="#1D9E75" fillOpacity={0.1} dot={{ r: 5, fill: '#1D9E75' }} />
-              <Line  yAxisId="right" type="monotone" dataKey="peso"  name="Peso (kg)" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5, fill: '#3b82f6' }} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* History table */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 18 }}>
-        <div style={{ padding: '16px 22px', borderBottom: '1px solid #e5e7eb', fontWeight: 600, fontSize: 15 }}>
-          Histórico de Check-ins
-        </div>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr style={{ background: '#f9fafb' }}>
-              {['Semana', 'Score', 'Peso', 'Observações'].map(h => (
-                <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, color: '#6b7280', fontWeight: 500, borderBottom: '1px solid #e5e7eb' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {student.history.map((h, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: '11px 16px', fontSize: 13 }}>{h.semana}</td>
-                <td style={{ padding: '11px 16px', fontWeight: 700, color: h.score >= 4 ? '#22c55e' : h.score < 2.5 ? '#ef4444' : '#f59e0b' }}>
-                  {h.score.toFixed(1)}
-                </td>
-                <td style={{ padding: '11px 16px', fontSize: 13, color: '#6b7280' }}>{h.peso} kg</td>
-                <td style={{ padding: '11px 16px', fontSize: 13, color: '#6b7280' }}>{h.observacao || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Notes */}
-      <div style={card}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>Anotações</div>
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          style={{ width: '100%', minHeight: 100, border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px', fontSize: 14, resize: 'vertical', outline: 'none', fontFamily: 'inherit', color: '#111' }}
-        />
-        <button
-          onClick={handleSave}
-          style={{ marginTop: 10, background: saved ? '#22c55e' : '#1D9E75', color: '#fff', padding: '9px 20px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s', border: 'none' }}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <Link 
+          href="/"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
-          {saved ? '✓ Salvo!' : 'Salvar'}
-        </button>
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
+        </Link>
+
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl">
+                {aluno.emoji}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{aluno.name}</h1>
+                <p className="text-gray-500">Aluno desde {aluno.startDate}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-500">Score</div>
+              <div className="text-3xl font-bold text-green-600">{aluno.score.toFixed(1)}</div>
+              <div className={`text-sm ${scoreChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {scoreChange >= 0 ? '↑' : '↓'} {Math.abs(scoreChange).toFixed(1)} vs semana anterior
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-5 h-5 text-blue-600" />
+              <span className="text-sm text-gray-600">Energia</span>
+            </div>
+            <div className="text-2xl font-bold">{lastWeek.energia}/5</div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-5 h-5 text-yellow-600" />
+              <span className="text-sm text-gray-600">Desempenho</span>
+            </div>
+            <div className="text-2xl font-bold">{lastWeek.desempenho}/5</div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Utensils className="w-5 h-5 text-orange-600" />
+              <span className="text-sm text-gray-600">Refeições Fora</span>
+            </div>
+            <div className="text-2xl font-bold">{lastWeek.refeicoesFora}</div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Droplet className="w-5 h-5 text-cyan-600" />
+              <span className="text-sm text-gray-600">Hidratação</span>
+            </div>
+            <div className="text-2xl font-bold">{lastWeek.hidratacao}/5</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold mb-4">Peso Atual</h2>
+            <div className="flex items-end gap-2">
+              <div className="text-4xl font-bold">{aluno.weight} kg</div>
+              <div className={`flex items-center gap-1 mb-2 ${weightChange <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {weightChange <= 0 ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                <span className="font-semibold">{Math.abs(weightChange).toFixed(1)} kg</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold mb-4">Pagamento</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                  aluno.payment === 'pago' ? 'bg-green-100 text-green-700' :
+                  aluno.payment === 'pendente' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {aluno.payment === 'pago' ? 'Em dia' : 
+                   aluno.payment === 'pendente' ? 'Pendente' : 
+                   `Atrasado ${aluno.daysLate} dias`}
+                </div>
+                <div className="text-2xl font-bold mt-2">{aluno.plan}</div>
+              </div>
+              <CreditCard className="w-12 h-12 text-gray-300" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4">Histórico de Check-ins (8 semanas)</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Semana</th>
+                  <th className="text-center py-3 px-4">Energia</th>
+                  <th className="text-center py-3 px-4">Desempenho</th>
+                  <th className="text-center py-3 px-4">Refeições Fora</th>
+                  <th className="text-center py-3 px-4">Hidratação</th>
+                  <th className="text-center py-3 px-4">Peso (kg)</th>
+                  <th className="text-left py-3 px-4">Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aluno.history.map((week) => (
+                  <tr key={week.week} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4">Semana {week.week}</td>
+                    <td className="text-center py-3 px-4">{week.energia}/5</td>
+                    <td className="text-center py-3 px-4">{week.desempenho}/5</td>
+                    <td className="text-center py-3 px-4">{week.refeicoesFora}</td>
+                    <td className="text-center py-3 px-4">{week.hidratacao}/5</td>
+                    <td className="text-center py-3 px-4">{week.peso}</td>
+                    <td className="py-3 px-4 text-gray-600 text-sm">{week.observacao || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   )
